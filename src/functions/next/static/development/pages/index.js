@@ -17273,7 +17273,11 @@ var _url = __webpack_require__(/*! url */ "./node_modules/native-url/dist/index.
 
 var _react = _interopRequireWildcard(__webpack_require__(/*! react */ "../../node_modules/react/index.js"));
 
+var _propTypes = _interopRequireDefault(__webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js"));
+
 var _router = _interopRequireDefault(__webpack_require__(/*! ./router */ "./node_modules/next/dist/client/router.js"));
+
+var _rewriteUrlForExport = __webpack_require__(/*! ../next-server/lib/router/rewrite-url-for-export */ "./node_modules/next/dist/next-server/lib/router/rewrite-url-for-export.js");
 
 var _utils = __webpack_require__(/*! ../next-server/lib/utils */ "./node_modules/next/dist/next-server/lib/utils.js");
 
@@ -17307,7 +17311,6 @@ function formatUrl(url) {
 var observer;
 var listeners = new _map["default"]();
 var IntersectionObserver = true ? window.IntersectionObserver : undefined;
-var prefetched = {};
 
 function getObserver() {
   // Return shared instance of IntersectionObserver if already created
@@ -17455,7 +17458,7 @@ function (_react$Component) {
     value: function handleRef(ref) {
       var _this2 = this;
 
-      var isPrefetched = prefetched[this.getHref()];
+      var isPrefetched = _router["default"].router.pageLoader.prefetched[this.getHref()];
 
       if (this.p && IntersectionObserver && ref && ref.tagName) {
         this.cleanUpListeners();
@@ -17474,11 +17477,7 @@ function (_react$Component) {
     value: function prefetch() {
       if (!this.p || false) return; // Prefetch the JSON page if asked (only in the client)
 
-      var href = this.getHref();
-
-      _router["default"].prefetch(href);
-
-      prefetched[href] = true;
+      _router["default"].prefetch(this.getHref());
     }
   }, {
     key: "render",
@@ -17534,7 +17533,7 @@ function (_react$Component) {
       // "<page>/index.html" directly.
 
 
-      if (false) { var rewriteUrlForNextExport; }
+      if (false) {}
 
       return _react["default"].cloneElement(child, props);
     }
@@ -17543,23 +17542,22 @@ function (_react$Component) {
   return Link;
 }(_react.Component);
 
+Link.propTypes = void 0;
+
 if (true) {
   var warn = (0, _utils.execOnce)(console.error); // This module gets removed by webpack.IgnorePlugin
 
-  var PropTypes = __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js");
-
-  var exact = __webpack_require__(/*! prop-types-exact */ "./node_modules/prop-types-exact/build/index.js"); // @ts-ignore the property is supported, when declaring it on the class it outputs an extra bit of code which is not needed.
-
+  var exact = __webpack_require__(/*! prop-types-exact */ "./node_modules/prop-types-exact/build/index.js");
 
   Link.propTypes = exact({
-    href: PropTypes.oneOfType([PropTypes.string, PropTypes.object]).isRequired,
-    as: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
-    prefetch: PropTypes.bool,
-    replace: PropTypes.bool,
-    shallow: PropTypes.bool,
-    passHref: PropTypes.bool,
-    scroll: PropTypes.bool,
-    children: PropTypes.oneOfType([PropTypes.element, function (props, propName) {
+    href: _propTypes["default"].oneOfType([_propTypes["default"].string, _propTypes["default"].object]).isRequired,
+    as: _propTypes["default"].oneOfType([_propTypes["default"].string, _propTypes["default"].object]),
+    prefetch: _propTypes["default"].bool,
+    replace: _propTypes["default"].bool,
+    shallow: _propTypes["default"].bool,
+    passHref: _propTypes["default"].bool,
+    scroll: _propTypes["default"].bool,
+    children: _propTypes["default"].oneOfType([_propTypes["default"].element, function (props, propName) {
       var value = props[propName];
 
       if (typeof value === 'string') {
@@ -17901,6 +17899,48 @@ exports.RouterContext = React.createContext(null);
 
 /***/ }),
 
+/***/ "./node_modules/next/dist/next-server/lib/router/rewrite-url-for-export.js":
+/*!*********************************************************************************!*\
+  !*** ./node_modules/next/dist/next-server/lib/router/rewrite-url-for-export.js ***!
+  \*********************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _slicedToArray = __webpack_require__(/*! @babel/runtime-corejs2/helpers/slicedToArray */ "./node_modules/@babel/runtime-corejs2/helpers/slicedToArray.js");
+
+var _Object$defineProperty = __webpack_require__(/*! @babel/runtime-corejs2/core-js/object/define-property */ "./node_modules/@babel/runtime-corejs2/core-js/object/define-property.js");
+
+_Object$defineProperty(exports, "__esModule", {
+  value: true
+});
+
+function rewriteUrlForNextExport(url) {
+  var _url$split = url.split('#'),
+      _url$split2 = _slicedToArray(_url$split, 2),
+      pathname = _url$split2[0],
+      hash = _url$split2[1]; // tslint:disable-next-line
+
+
+  var _pathname$split = pathname.split('?'),
+      _pathname$split2 = _slicedToArray(_pathname$split, 2),
+      path = _pathname$split2[0],
+      qs = _pathname$split2[1];
+
+  path = path.replace(/\/$/, ''); // Append a trailing slash if this path does not have an extension
+
+  if (!/\.[^/]+\/?$/.test(path)) path += "/";
+  if (qs) path += '?' + qs;
+  if (hash) path += '#' + hash;
+  return path;
+}
+
+exports.rewriteUrlForNextExport = rewriteUrlForNextExport;
+
+/***/ }),
+
 /***/ "./node_modules/next/dist/next-server/lib/router/router.js":
 /*!*****************************************************************!*\
   !*** ./node_modules/next/dist/next-server/lib/router/router.js ***!
@@ -17940,6 +17980,8 @@ var url_1 = __webpack_require__(/*! url */ "./node_modules/native-url/dist/index
 var mitt_1 = __importDefault(__webpack_require__(/*! ../mitt */ "./node_modules/next/dist/next-server/lib/mitt.js"));
 
 var utils_1 = __webpack_require__(/*! ../utils */ "./node_modules/next/dist/next-server/lib/utils.js");
+
+var rewrite_url_for_export_1 = __webpack_require__(/*! ./rewrite-url-for-export */ "./node_modules/next/dist/next-server/lib/router/rewrite-url-for-export.js");
 
 var is_dynamic_1 = __webpack_require__(/*! ./utils/is-dynamic */ "./node_modules/next/dist/next-server/lib/router/utils/is-dynamic.js");
 
@@ -18170,7 +18212,7 @@ function () {
         } // marking route changes as a navigation start entry
 
 
-        if (utils_1.ST) {
+        if (utils_1.SUPPORTS_PERFORMANCE_USER_TIMING) {
           performance.mark('routeChange');
         } // If url and as provided as an object representation,
         // we'll format them into the string version here.
@@ -18180,7 +18222,7 @@ function () {
         var as = typeof _as === 'object' ? utils_1.formatWithValidation(_as) : _as; // Add the ending slash to the paths. So, we can serve the
         // "<page>/index.html" directly for the SSR page.
 
-        if (false) { var rewriteUrlForNextExport; }
+        if (false) {}
 
         _this2.abortComponentLoad(as); // If the url change is only related to a hash change
         // We should not proceed. We should only change the state.
@@ -18347,7 +18389,7 @@ function () {
         }
 
         return _this3._getData(function () {
-          return Component.__N_SSG ? _this3._getStaticData(as) : _this3.getInitialProps(Component, // we provide AppTree later so this needs to be `any`
+          return Component.__NEXT_SPR ? _this3._getStaticData(as) : _this3.getInitialProps(Component, // we provide AppTree later so this needs to be `any`
           {
             pathname: pathname,
             query: query,
@@ -18514,15 +18556,16 @@ function () {
           }
 
           return;
-        } // Prefetch is not supported in development mode because it would trigger on-demand-entries
-
-
-        if (true) {
-          return;
         } // @ts-ignore pathname is always defined
 
 
-        var route = toRoute(pathname);
+        var route = toRoute(pathname); // Prefetch is not supported in development mode because it would trigger on-demand-entries
+
+        if (true) {
+          // mark it as prefetched for debugging in dev
+          _this4.pageLoader.prefetched[route] = true;
+          return;
+        }
 
         _this4.pageLoader.prefetch(route).then(resolve, reject);
       });
@@ -18630,9 +18673,7 @@ function () {
   }], [{
     key: "_rewriteUrlForNextExport",
     value: function _rewriteUrlForNextExport(url) {
-      if (false) { var rewriteUrlForNextExport; } else {
-        return url;
-      }
+      return rewrite_url_for_export_1.rewriteUrlForNextExport(url);
     }
   }]);
 
@@ -18841,7 +18882,7 @@ function isResSent(res) {
 exports.isResSent = isResSent;
 
 function loadGetInitialProps(App, ctx) {
-  var _a, message, res, props, _message;
+  var message, res, props, _message;
 
   return _regeneratorRuntime.async(function loadGetInitialProps$(_context) {
     while (1) {
@@ -18849,7 +18890,7 @@ function loadGetInitialProps(App, ctx) {
         case 0:
           if (false) {}
 
-          if (!((_a = App.prototype) === null || _a === void 0 ? void 0 : _a.getInitialProps)) {
+          if (!(App.prototype && App.prototype.getInitialProps)) {
             _context.next = 4;
             break;
           }
@@ -18941,8 +18982,8 @@ function formatWithValidation(url, options) {
 }
 
 exports.formatWithValidation = formatWithValidation;
-exports.SP = typeof performance !== 'undefined';
-exports.ST = exports.SP && typeof performance.mark === 'function' && typeof performance.measure === 'function';
+exports.SUPPORTS_PERFORMANCE = typeof performance !== 'undefined';
+exports.SUPPORTS_PERFORMANCE_USER_TIMING = exports.SUPPORTS_PERFORMANCE && typeof performance.mark === 'function' && typeof performance.measure === 'function';
 
 /***/ }),
 
@@ -21076,7 +21117,7 @@ function Index() {
 
 /***/ }),
 
-/***/ 0:
+/***/ 1:
 /*!*****************************************************************************************************************************************!*\
   !*** multi next-client-pages-loader?page=%2F&absolutePagePath=%2Fhome%2Fclive%2FDocuments%2Fnextjs-test%2Fsrc%2Fapp%2Fpages%2Findex.js ***!
   \*****************************************************************************************************************************************/
@@ -21099,5 +21140,5 @@ module.exports = dll_b08c58da5fc93690b15b;
 
 /***/ })
 
-},[[0,"static/runtime/webpack.js"]]]);
+},[[1,"static/runtime/webpack.js"]]]);
 //# sourceMappingURL=index.js.map
